@@ -1,0 +1,47 @@
+import json
+from typing import Optional
+
+def build_prompt(
+    topic: str,
+    language: str,
+    tone: str,
+    audience: str,
+    prompt_override: Optional[str] = None,
+    negative_prompt: Optional[str] = None
+) -> str:
+    """Builds a structured prompt for the AI."""
+    
+    if prompt_override:
+        base = prompt_override.replace("{topic}", topic)
+    else:
+        base = (
+            f"You are a content creator specializing in {topic}.\n"
+            f"Create a short, impactful quote/text about {topic}.\n"
+        )
+        
+    rules = [
+        f"Writing Style: {tone} tone.",
+        f"Audience: {audience}.",
+        "Length: short/medium.",
+        f"Language: {language}.",
+        "The text should be typography-friendly, visually impactful.",
+        "Do not use markdown formatting in the text field."
+    ]
+    
+    if negative_prompt:
+        rules.append(f"AVOID: {negative_prompt}")
+        
+    rules_text = "\n".join(f"- {r}" for r in rules)
+    
+    full_prompt = (
+        f"{base}\n\n"
+        f"Rules:\n{rules_text}\n\n"
+        "IMPORTANT: You MUST return a JSON object with the following fields:\n"
+        "- text: The main quote or text content\n"
+        "- caption: A social media caption matching the content\n"
+        "- hashtags: An array of 3-5 relevant hashtags (without #)\n"
+        "- keywords: An array of 3-5 SEO keywords\n"
+        "- title: A short title for internal use\n"
+    )
+    
+    return full_prompt
