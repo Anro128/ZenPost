@@ -1,13 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useSettingsByCategory, useUpdateSettings } from '../hooks/useSettings';
-import { Settings as SettingsIcon, Key, CheckCircle, Shield, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { useSettingsByCategory } from '../hooks/useSettings';
+import { Settings as SettingsIcon, Key, CheckCircle, Shield, Lock, Eye, EyeOff, AlertCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
 
 export default function Settings() {
-  const { data: settingsList, isLoading, refetch } = useSettingsByCategory('api_keys');
-  const updateMutation = useUpdateSettings();
-  const [successMessage, setSuccessMessage] = useState('');
+  const { data: settingsList, isLoading } = useSettingsByCategory('api_keys');
 
   // Password reset state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -17,28 +14,6 @@ export default function Settings() {
   const [pwIsLoading, setPwIsLoading] = useState(false);
   const [pwSuccessMsg, setPwSuccessMsg] = useState('');
   const [pwErrorMsg, setPwErrorMsg] = useState('');
-
-  const { register, handleSubmit, reset } = useForm();
-
-  useEffect(() => {
-    if (settingsList) {
-      const defaultValues: Record<string, string> = {};
-      settingsList.forEach((s: any) => {
-        defaultValues[s.key] = s.value || '';
-      });
-      reset(defaultValues);
-    }
-  }, [settingsList, reset]);
-
-  const onSubmit = (data: any) => {
-    updateMutation.mutate(data, {
-      onSuccess: () => {
-        setSuccessMessage('API Keys successfully saved to .env file!');
-        refetch();
-        setTimeout(() => setSuccessMessage(''), 4000);
-      }
-    });
-  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +64,7 @@ export default function Settings() {
         <SettingsIcon className="h-6 w-6" />
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Manage master authentication password and AI provider API keys.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Manage master authentication password and view server environment configurations.</p>
         </div>
       </div>
 
@@ -107,7 +82,7 @@ export default function Settings() {
           </div>
 
           <p className="text-sm text-muted-foreground mb-4">
-            Update your master dashboard password. The new password will be saved directly into your <code>.env</code> file.
+            Update your master dashboard password. The new password will be saved directly into your server's <code>.env</code> file.
           </p>
 
           {pwSuccessMsg && (
@@ -185,112 +160,53 @@ export default function Settings() {
         </div>
       </form>
 
-      {/* 2. AI Provider API Keys Form Card */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-card p-6 rounded-xl border border-border shadow-sm">
+      {/* 2. Read-Only Server API Keys Security Status */}
+      <div className="space-y-6 bg-card p-6 rounded-xl border border-border shadow-sm">
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-medium flex items-center">
               <Key className="mr-2 h-5 w-5 text-primary" />
-              AI Provider API Keys
+              AI Provider API Keys Status
             </h3>
-            <span className="inline-flex items-center text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">
-              <Shield className="h-3.5 w-3.5 mr-1 text-green-600" />
-              Saved in .env file
+            <span className="inline-flex items-center text-xs text-green-600 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-md">
+              <Shield className="h-3.5 w-3.5 mr-1" />
+              Locked in Server .env
             </span>
           </div>
 
           <p className="text-sm text-muted-foreground mb-6">
-            Enter your secret API keys below. All keys are stored securely in your project's <code>.env</code> file.
+            For security reasons, AI API keys cannot be viewed or edited via Web/API interface. All API keys are loaded strictly from the server's <code>.env</code> file.
           </p>
-
-          {successMessage && (
-            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 text-green-600 rounded-lg flex items-center text-sm">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              {successMessage}
-            </div>
-          )}
           
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium">Google Gemini API Key</label>
-                {isConfigured('GEMINI_API_KEY') && (
-                  <span className="text-xs text-green-600 flex items-center font-medium">
-                    <CheckCircle className="h-3 w-3 mr-1" /> Active in .env
-                  </span>
-                )}
-              </div>
-              <input 
-                type="password"
-                {...register('GEMINI_API_KEY')} 
-                className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="AIzaSy..."
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium">OpenAI API Key</label>
-                {isConfigured('OPENAI_API_KEY') && (
-                  <span className="text-xs text-green-600 flex items-center font-medium">
-                    <CheckCircle className="h-3 w-3 mr-1" /> Active in .env
-                  </span>
-                )}
-              </div>
-              <input 
-                type="password"
-                {...register('OPENAI_API_KEY')} 
-                className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="sk-proj-..."
-              />
-            </div>
-            
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium">Anthropic (Claude) API Key</label>
-                {isConfigured('ANTHROPIC_API_KEY') && (
-                  <span className="text-xs text-green-600 flex items-center font-medium">
-                    <CheckCircle className="h-3 w-3 mr-1" /> Active in .env
-                  </span>
-                )}
-              </div>
-              <input 
-                type="password"
-                {...register('ANTHROPIC_API_KEY')} 
-                className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="sk-ant-..."
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-medium">DeepSeek API Key</label>
-                {isConfigured('DEEPSEEK_API_KEY') && (
-                  <span className="text-xs text-green-600 flex items-center font-medium">
-                    <CheckCircle className="h-3 w-3 mr-1" /> Active in .env
-                  </span>
-                )}
-              </div>
-              <input 
-                type="password"
-                {...register('DEEPSEEK_API_KEY')} 
-                className="w-full flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="sk-..."
-              />
-            </div>
+          <div className="space-y-3">
+            {[
+              { label: 'Google Gemini API Key', key: 'GEMINI_API_KEY' },
+              { label: 'OpenAI API Key', key: 'OPENAI_API_KEY' },
+              { label: 'Anthropic (Claude) API Key', key: 'ANTHROPIC_API_KEY' },
+              { label: 'DeepSeek API Key', key: 'DEEPSEEK_API_KEY' },
+            ].map(item => {
+              const active = isConfigured(item.key);
+              return (
+                <div key={item.key} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20">
+                  <div>
+                    <p className="text-xs font-medium">{item.label}</p>
+                    <p className="text-[11px] font-mono text-muted-foreground">{item.key}</p>
+                  </div>
+                  {active ? (
+                    <span className="inline-flex items-center text-xs font-medium text-green-600 bg-green-500/10 px-2.5 py-1 rounded-md">
+                      <CheckCircle className="h-3.5 w-3.5 mr-1" /> Active in .env
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md">
+                      <XCircle className="h-3.5 w-3.5 mr-1" /> Not Configured
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
-
-        <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <button 
-            type="submit" 
-            disabled={updateMutation.isPending}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2 disabled:opacity-50"
-          >
-            {updateMutation.isPending ? 'Saving to .env...' : 'Save API Keys'}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

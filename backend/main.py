@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -8,7 +8,7 @@ from backend.config import settings
 from backend.database import engine, Base
 from backend.renderer.download_fonts import download_fonts
 from backend.api.health import router as health_router
-from backend.api.auth import router as auth_router
+from backend.api.auth import router as auth_router, verify_token
 from backend.api.scheduler import router as scheduler_router
 from backend.api.generator import router as generator_router
 from backend.api.template import router as template_router
@@ -63,18 +63,22 @@ app.add_middleware(
 os.makedirs(settings.STORAGE_PATH, exist_ok=True)
 app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
 
+# Public Routes
 app.include_router(health_router)
 app.include_router(auth_router)
-app.include_router(scheduler_router)
-app.include_router(generator_router)
-app.include_router(template_router)
-app.include_router(history_router)
-app.include_router(analytics_router)
-app.include_router(planner_router)
-app.include_router(upload_router)
-app.include_router(settings_router)
-app.include_router(providers_router)
-app.include_router(facebook_router)
+
+# Protected Routes (Require Authentication)
+protected_deps = [Depends(verify_token)]
+app.include_router(scheduler_router, dependencies=protected_deps)
+app.include_router(generator_router, dependencies=protected_deps)
+app.include_router(template_router, dependencies=protected_deps)
+app.include_router(history_router, dependencies=protected_deps)
+app.include_router(analytics_router, dependencies=protected_deps)
+app.include_router(planner_router, dependencies=protected_deps)
+app.include_router(upload_router, dependencies=protected_deps)
+app.include_router(settings_router, dependencies=protected_deps)
+app.include_router(providers_router, dependencies=protected_deps)
+app.include_router(facebook_router, dependencies=protected_deps)
 
 @app.get("/")
 async def root():
