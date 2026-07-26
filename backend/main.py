@@ -34,15 +34,21 @@ async def lifespan(app: FastAPI):
         print(f"Font download warning: {e}")
 
     # Start background services
-    from backend.services.queue_service import queue_service
-    from backend.scheduler_engine.engine import scheduler_engine
-    await queue_service.start()
-    await scheduler_engine.start()
+    try:
+        from backend.services.queue_service import queue_service
+        from backend.scheduler_engine.engine import scheduler_engine
+        await queue_service.start()
+        await scheduler_engine.start()
+    except Exception as e:
+        print(f"Service startup error: {e}")
     
     yield
     
     # Stop background services
-    await queue_service.stop()
+    try:
+        await queue_service.stop()
+    except Exception:
+        pass
 
 app = FastAPI(title="AI Content Generator", version="1.0.0", lifespan=lifespan)
 

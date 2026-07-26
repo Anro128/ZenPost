@@ -8,7 +8,6 @@ services:
     env_file:
       - .env
     volumes:
-      - ./content_generator.db:/app/content_generator.db
       - ./storage:/app/storage
       - ./.env:/app/.env
     ports:
