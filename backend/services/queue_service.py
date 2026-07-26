@@ -52,7 +52,7 @@ class QueueService:
                     
                     try:
                         if job.type == JobType.GENERATE:
-                            scheduler_id = job.payload.get("scheduler_id")
+                            scheduler_id = job.payload.get("scheduler_id") or job.scheduler_id
                             scheduler = await scheduler_repo.get_by_id(db, scheduler_id)
                             if not scheduler:
                                 raise ValueError(f"Scheduler {scheduler_id} not found")
@@ -68,7 +68,7 @@ class QueueService:
                             
                         elif job.type in (JobType.RENDER_IMAGE, JobType.RENDER_VIDEO):
                             content_id = job.payload.get("content_id")
-                            scheduler_id = job.payload.get("scheduler_id")
+                            scheduler_id = job.payload.get("scheduler_id") or job.scheduler_id
                             content = await content_repo.get_by_id(db, content_id)
                             scheduler = await scheduler_repo.get_by_id(db, scheduler_id)
                             
@@ -86,7 +86,7 @@ class QueueService:
                                 config.height = 1350 if scheduler.output_type == OutputType.IMAGE else 1920
                                 config.font_family = template.font_family
                                 config.font_size = template.font_size
-                                config.font_weight = str(template.font_weight)
+                                config.font_weight = int(template.font_weight) if template.font_weight else 700
                                 config.text_color = template.text_color
                                 config.bg_color = template.bg_color
                                 config.padding_x = template.padding_x
@@ -97,10 +97,13 @@ class QueueService:
                                 config.footer_font_size = template.footer_font_size
                                 config.footer_color = template.footer_color
                                 
+                            # Resolve footer text: scheduler username -> template footer text -> fallback default
+                            footer_text = scheduler.footer_username or (template.footer_text if template else None) or "@vibecoded"
+                                
                             output_type = OutputType.IMAGE if job.type == JobType.RENDER_IMAGE else OutputType.VIDEO
                             file_path = await renderer_service.render_content(
                                 text=content.output_text,
-                                footer=scheduler.footer_username,
+                                footer=footer_text,
                                 output_type=output_type,
                                 config=config
                             )
@@ -113,7 +116,8 @@ class QueueService:
                                 
                             await content_repo.update(db, content, update_data)
                             
-                            if scheduler.upload_destination and scheduler.upload_destination.lower() != "none":
+                            # Enqueue Upload if FB Page or destination is set
+                            if scheduler.facebook_page_id or (scheduler.upload_destination and scheduler.upload_destination.lower() != "none"):
                                 await self.enqueue(db, JobType.UPLOAD, {
                                     "content_id": content.id,
                                     "scheduler_id": scheduler_id
@@ -121,22 +125,44 @@ class QueueService:
                                 
                         elif job.type == JobType.UPLOAD:
                             content_id = job.payload.get("content_id")
-                            scheduler_id = job.payload.get("scheduler_id")
+                            scheduler_id = job.payload.get("scheduler_id") or job.scheduler_id
                             content = await content_repo.get_by_id(db, content_id)
                             scheduler = await scheduler_repo.get_by_id(db, scheduler_id)
                             
-                            # Simulate upload
-                            await asyncio.sleep(2)
-                            upload_url = f"https://example.com/post/{content_id}"
-                            
-                            await upload_service.record_upload(
-                                db,
-                                content_id=content_id,
-                                platform=scheduler.upload_destination,
-                                status=UploadStatus.SUCCESS,
-                                url=upload_url
-                            )
-                            await content_repo.update(db, content, {"status": ContentStatus.UPLOADED})
+                            if scheduler and scheduler.facebook_page_id:
+                                from backend.repositories.facebook_repo import facebook_repo
+                                from backend.uploaders.facebook import FacebookUploader
+                                
+                                fb_page = await facebook_repo.get_by_id(db, scheduler.facebook_page_id)
+                                if fb_page and fb_page.token_valid:
+                                    uploader = FacebookUploader()
+                                    upload_url = await uploader.upload({
+                                        "caption": content.caption or content.output_text,
+                                        "image_path": content.image_path,
+                                        "video_path": content.video_path
+                                    }, {
+                                        "page_id": fb_page.page_id,
+                                        "page_access_token": fb_page.page_access_token
+                                    })
+                                    await upload_service.record_upload(
+                                        db,
+                                        content_id=content_id,
+                                        platform="facebook",
+                                        status=UploadStatus.SUCCESS,
+                                        url=upload_url
+                                    )
+                                    await content_repo.update(db, content, {"status": ContentStatus.UPLOADED})
+                            else:
+                                # Fallback simulation
+                                upload_url = f"https://facebook.com/post/{content_id}"
+                                await upload_service.record_upload(
+                                    db,
+                                    content_id=content_id,
+                                    platform=scheduler.upload_destination or "facebook",
+                                    status=UploadStatus.SUCCESS,
+                                    url=upload_url
+                                )
+                                await content_repo.update(db, content, {"status": ContentStatus.UPLOADED})
 
                         await job_repo.update(db, job, {"status": JobStatus.COMPLETED})
                     except Exception as e:

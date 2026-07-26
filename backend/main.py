@@ -7,6 +7,7 @@ import os
 from backend.config import settings
 from backend.database import engine, Base
 from backend.api.health import router as health_router
+from backend.api.auth import router as auth_router
 from backend.api.scheduler import router as scheduler_router
 from backend.api.generator import router as generator_router
 from backend.api.template import router as template_router
@@ -15,6 +16,8 @@ from backend.api.analytics import router as analytics_router
 from backend.api.planner import router as planner_router
 from backend.api.upload import router as upload_router
 from backend.api.settings import router as settings_router
+from backend.api.providers import router as providers_router
+from backend.api.facebook import router as facebook_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,6 +51,7 @@ os.makedirs(settings.STORAGE_PATH, exist_ok=True)
 app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
 
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(scheduler_router)
 app.include_router(generator_router)
 app.include_router(template_router)
@@ -56,6 +60,8 @@ app.include_router(analytics_router)
 app.include_router(planner_router)
 app.include_router(upload_router)
 app.include_router(settings_router)
+app.include_router(providers_router)
+app.include_router(facebook_router)
 
 @app.get("/")
 async def root():

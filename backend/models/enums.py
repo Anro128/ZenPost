@@ -76,3 +76,4 @@ class SettingCategory(str, Enum):
     BRAND = "brand"
     QUEUE = "queue"
     NOTIFICATION = "notification"
+    API_KEYS = "api_keys"

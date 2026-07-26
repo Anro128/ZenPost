@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 
 class GenerateOptions(BaseModel):
@@ -8,6 +8,8 @@ class GenerateOptions(BaseModel):
     model: Optional[str] = None
 
 class GenerateResult(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    
     text: str
     caption: str
     hashtags: List[str]

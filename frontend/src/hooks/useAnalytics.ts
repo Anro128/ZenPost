@@ -1,26 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
-import { analyticsService } from '../services/analyticsService';
+import api from '../services/api';
 
-export const useDashboardStats = () => {
+export function useAnalyticsDashboard() {
   return useQuery({
-    queryKey: ['analytics', 'dashboard'],
-    queryFn: analyticsService.getDashboard,
-    retry: 1,
+    queryKey: ['analytics_dashboard'],
+    queryFn: async () => {
+      const res = await api.get('/analytics/dashboard');
+      return res.data;
+    }
   });
-};
+}
 
-export const useDailyAnalytics = () => {
-  return useQuery({
-    queryKey: ['analytics', 'daily'],
-    queryFn: analyticsService.getDaily,
-    retry: 1,
-  });
-};
+export const useDashboardStats = useAnalyticsDashboard;
 
-export const useProviderUsage = () => {
+export function useDailyAnalytics(days: number = 7) {
   return useQuery({
-    queryKey: ['analytics', 'providers'],
-    queryFn: analyticsService.getProviders,
-    retry: 1,
+    queryKey: ['analytics_daily', days],
+    queryFn: async () => {
+      const res = await api.get(`/analytics/daily?days=${days}`);
+      return res.data;
+    }
   });
-};
+}
+
+export function useProviderUsage() {
+  return useQuery({
+    queryKey: ['analytics_providers'],
+    queryFn: async () => {
+      const res = await api.get('/analytics/dashboard');
+      return res.data?.provider_breakdown || {};
+    }
+  });
+}

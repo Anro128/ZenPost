@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTheme } from '../components/theme-provider';
 import { 
@@ -8,23 +8,25 @@ import {
   LayoutTemplate, 
   KanbanSquare, 
   History, 
-  BarChart3, 
   Sparkles, 
   PenTool, 
   Settings,
+  Facebook,
   ChevronLeft,
   ChevronRight,
   Sun,
-  Moon
+  Moon,
+  LogOut
 } from 'lucide-react';
+import api from '../services/api';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'Schedulers', path: '/schedulers', icon: CalendarClock },
+  { name: 'Facebook Pages', path: '/facebook-pages', icon: Facebook },
   { name: 'Templates', path: '/templates', icon: LayoutTemplate },
   { name: 'Planner', path: '/planner', icon: KanbanSquare },
   { name: 'History', path: '/history', icon: History },
-  { name: 'Analytics', path: '/analytics', icon: BarChart3 },
   { name: 'Generator', path: '/generator', icon: Sparkles },
   { name: 'Prompt Builder', path: '/prompt-builder', icon: PenTool },
   { name: 'Settings', path: '/settings', icon: Settings },
@@ -33,7 +35,19 @@ const navItems = [
 export default function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      // Ignore API logout error
+    } finally {
+      localStorage.removeItem('auth_token');
+      navigate('/login');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -73,6 +87,18 @@ export default function MainLayout() {
             )
           })}
         </nav>
+
+        {/* Sidebar Footer Logout */}
+        <div className="p-3 border-t border-border">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-2 text-xs font-medium rounded-md text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-colors"
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut size={18} className="min-w-[18px]" />
+            {!collapsed && <span className="ml-3 font-semibold">Logout</span>}
+          </button>
+        </div>
       </motion.aside>
 
       {/* Main Content */}
@@ -80,7 +106,6 @@ export default function MainLayout() {
         {/* Header */}
         <header className="h-16 border-b border-border flex items-center justify-between px-6">
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            {/* Breadcrumbs or Command Palette Trigger */}
             <span className="flex items-center bg-secondary/50 px-3 py-1.5 rounded-md text-xs cursor-pointer hover:bg-secondary">
               Search... <kbd className="ml-2 bg-background border px-1 rounded">⌘K</kbd>
             </span>

@@ -15,11 +15,12 @@ def build_prompt(
         base = prompt_override.replace("{topic}", topic)
     else:
         base = (
-            f"You are a content creator specializing in {topic}.\n"
-            f"Create a short, impactful quote/text about {topic}.\n"
+            f"You are a content creator specializing in '{topic}'.\n"
+            f"Create a short, impactful quote/text specifically about '{topic}'.\n"
         )
         
     rules = [
+        f"Main Topic / Focus: {topic}.",
         f"Writing Style: {tone} tone.",
         f"Audience: {audience}.",
         "Length: short/medium.",
@@ -37,11 +38,15 @@ def build_prompt(
         f"{base}\n\n"
         f"Rules:\n{rules_text}\n\n"
         "IMPORTANT: You MUST return a JSON object with the following fields:\n"
-        "- text: The main quote or text content\n"
-        "- caption: A social media caption matching the content\n"
+        "- text: The main quote or text content (MUST be specifically about the topic)\n"
+        "- caption: Leave this field empty string ''\n"
         "- hashtags: An array of 3-5 relevant hashtags (without #)\n"
         "- keywords: An array of 3-5 SEO keywords\n"
         "- title: A short title for internal use\n"
     )
     
     return full_prompt
+
+def ensure_short_caption(caption: str, text: str) -> str:
+    """Caption is intentionally kept empty as requested."""
+    return ""

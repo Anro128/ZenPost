@@ -5,6 +5,8 @@ from backend.models.enums import TemplateLayout, TextAlign, VerticalAlign
 from backend.renderer.typography import load_font, calculate_best_font_size
 
 class RenderConfig(BaseModel):
+    width: int = 1080
+    height: int = 1350
     layout: TemplateLayout = TemplateLayout.CENTERED
     font_family: str = "Inter"
     font_size: int = 48
@@ -20,7 +22,7 @@ class RenderConfig(BaseModel):
     footer_color: str = "#999999"
 
 def render_image(text: str, footer: str, config: RenderConfig) -> bytes:
-    width, height = 1080, 1350
+    width, height = config.width, config.height
     img = Image.new("RGB", (width, height), color=config.bg_color)
     draw = ImageDraw.Draw(img)
     

@@ -24,15 +24,16 @@ class Scheduler(BaseModel):
     cron_expression: Mapped[str] = mapped_column(String(100))
     timezone: Mapped[str] = mapped_column(String(50), default="UTC")
     topic: Mapped[str] = mapped_column(String(255))
-    language: Mapped[str] = mapped_column(String(50))
-    tone: Mapped[str] = mapped_column(String(50))
-    audience: Mapped[str] = mapped_column(String(100))
+    language: Mapped[str] = mapped_column(String(50), default="id")
+    tone: Mapped[str] = mapped_column(String(50), default="informative")
+    audience: Mapped[str] = mapped_column(String(100), default="general")
     provider_name: Mapped[str] = mapped_column(String(50))
     model_name: Mapped[str] = mapped_column(String(100))
     output_type: Mapped[OutputType] = mapped_column(String(50))
-    template_id: Mapped[int] = mapped_column(ForeignKey("templates.id"))
-    footer_username: Mapped[str] = mapped_column(String(100))
+    template_id: Mapped[Optional[int]] = mapped_column(ForeignKey("templates.id"), nullable=True)
+    footer_username: Mapped[str] = mapped_column(String(100), default="")
     upload_destination: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    facebook_page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("facebook_pages.id"), nullable=True)
     prompt_override: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     negative_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=3)
@@ -40,6 +41,14 @@ class Scheduler(BaseModel):
     random_seed: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     planner_id: Mapped[Optional[int]] = mapped_column(ForeignKey("planner_items.id"), nullable=True)
     last_run_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+class FacebookPage(BaseModel):
+    __tablename__ = "facebook_pages"
+    page_id: Mapped[str] = mapped_column(String(100), unique=True)
+    page_name: Mapped[str] = mapped_column(String(255))
+    page_access_token: Mapped[str] = mapped_column(Text)
+    token_valid: Mapped[bool] = mapped_column(Boolean, default=True)
+    avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
 class Provider(BaseModel):
     __tablename__ = "providers"

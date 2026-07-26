@@ -1,28 +1,32 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
-def get_font_path(font_family: str, weight: int) -> str:
+def get_font_path(font_family: str, weight: Any) -> str:
+    try:
+        w_int = int(weight)
+    except (ValueError, TypeError):
+        w_int = 400
+
     fonts_dir = os.path.join(os.path.dirname(__file__), "fonts")
-    # Fallback to default PIL font if missing
     base = "Inter-Regular.ttf"
-    if weight >= 700:
+    if w_int >= 700:
         base = "Inter-Bold.ttf"
         
     path = os.path.join(fonts_dir, base)
     if not os.path.exists(path):
         # Fallback to Windows arial if Inter is not downloaded
         arial_path = r"C:\Windows\Fonts\arial.ttf"
-        if weight >= 700:
+        if w_int >= 700:
             arial_path = r"C:\Windows\Fonts\arialbd.ttf"
         
         if os.path.exists(arial_path):
             return arial_path
             
-        return "" # Will cause PIL to use default bitmap font if handled
+        return ""
     return path
 
-def load_font(font_family: str, weight: int, size: int) -> ImageFont.FreeTypeFont:
+def load_font(font_family: str, weight: Any, size: int) -> ImageFont.FreeTypeFont:
     path = get_font_path(font_family, weight)
     try:
         if path:
@@ -40,7 +44,6 @@ def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int, draw: Ima
     current_line = words[0]
     for word in words[1:]:
         test_line = current_line + " " + word
-        # getlength gets width
         length = draw.textlength(test_line, font=font)
         if length <= max_width:
             current_line = test_line
@@ -53,7 +56,7 @@ def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int, draw: Ima
 def calculate_best_font_size(
     text: str, 
     font_family: str, 
-    weight: int, 
+    weight: Any, 
     max_width: int, 
     max_height: int, 
     start_size: int = 120, 
@@ -61,7 +64,6 @@ def calculate_best_font_size(
     line_height_mult: float = 1.4
 ) -> Tuple[ImageFont.FreeTypeFont, List[str], int]:
     
-    # Simple binary search or linear step down
     size = start_size
     draw = ImageDraw.Draw(Image.new('RGB', (1, 1)))
     
@@ -69,7 +71,6 @@ def calculate_best_font_size(
         font = load_font(font_family, weight, size)
         lines = wrap_text(text, font, max_width, draw)
         
-        # Calculate total height
         if not lines:
             break
         
@@ -82,7 +83,6 @@ def calculate_best_font_size(
             
         size -= 4
         
-    # If still doesn't fit, return smallest
     font = load_font(font_family, weight, min_size)
     lines = wrap_text(text, font, max_width, draw)
     bbox = font.getbbox("A")

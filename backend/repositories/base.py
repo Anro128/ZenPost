@@ -17,7 +17,14 @@ class BaseRepository(Generic[T]):
         return result.scalars().first()
 
     async def create(self, db: AsyncSession, obj_in: dict) -> T:
-        filtered_in = {k: v for k, v in obj_in.items() if k not in ("id", "created_at", "updated_at")}
+        data = dict(obj_in)
+        if "destination" in data and not hasattr(self.model, "destination") and hasattr(self.model, "upload_destination"):
+            data["upload_destination"] = data.pop("destination")
+
+        filtered_in = {
+            k: v for k, v in data.items()
+            if k not in ("id", "created_at", "updated_at") and hasattr(self.model, k)
+        }
         db_obj = self.model(**filtered_in)
         db.add(db_obj)
         await db.commit()
@@ -25,8 +32,12 @@ class BaseRepository(Generic[T]):
         return db_obj
 
     async def update(self, db: AsyncSession, db_obj: T, obj_in: dict) -> T:
-        for key, value in obj_in.items():
-            if key not in ("id", "created_at", "updated_at"):
+        data = dict(obj_in)
+        if "destination" in data and not hasattr(self.model, "destination") and hasattr(self.model, "upload_destination"):
+            data["upload_destination"] = data.pop("destination")
+
+        for key, value in data.items():
+            if key not in ("id", "created_at", "updated_at") and hasattr(self.model, key):
                 setattr(db_obj, key, value)
         await db.commit()
         await db.refresh(db_obj)

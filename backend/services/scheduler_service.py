@@ -15,6 +15,6 @@ class SchedulerService:
         from backend.models.enums import JobType
         scheduler = await scheduler_repo.get_by_id(db, scheduler_id)
         if scheduler:
-            await queue_service.enqueue(db, JobType.GENERATE, {}, scheduler_id)
+            await queue_service.enqueue(db, JobType.GENERATE, {"scheduler_id": scheduler_id}, scheduler_id)
 
 scheduler_service = SchedulerService()

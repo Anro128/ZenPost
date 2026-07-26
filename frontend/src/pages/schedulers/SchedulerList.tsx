@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Play, Edit, Trash2, Power, CalendarClock } from 'lucide-react';
+import { Search, Plus, Play, Edit, Trash2, Power, CalendarClock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useSchedulers, useToggleScheduler, useDeleteScheduler, useTriggerScheduler } from '../../hooks/useSchedulers';
 
 export default function SchedulerList() {
@@ -12,6 +12,8 @@ export default function SchedulerList() {
   const triggerMutation = useTriggerScheduler();
   
   const [search, setSearch] = useState('');
+  const [activeTriggerId, setActiveTriggerId] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   
   const schedulers = (schedulersData || []).filter(s => 
     s.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -28,8 +30,26 @@ export default function SchedulerList() {
     }
   };
 
-  const handleTrigger = (id: number) => {
-    triggerMutation.mutate(id);
+  const handleTrigger = (id: number, name: string) => {
+    setActiveTriggerId(id);
+    setFeedback(null);
+    triggerMutation.mutate(id, {
+      onSuccess: () => {
+        setActiveTriggerId(null);
+        setFeedback({ 
+          type: 'success', 
+          message: `Successfully triggered '${name}'! Content generation job queued.` 
+        });
+        setTimeout(() => setFeedback(null), 5000);
+      },
+      onError: (err: any) => {
+        setActiveTriggerId(null);
+        setFeedback({ 
+          type: 'error', 
+          message: err.response?.data?.detail || err.message || 'Failed to trigger scheduler' 
+        });
+      }
+    });
   };
 
   return (
@@ -47,6 +67,15 @@ export default function SchedulerList() {
           New Scheduler
         </button>
       </div>
+
+      {feedback && (
+        <div className={`p-3.5 rounded-xl border text-sm flex items-center justify-between ${feedback.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-600' : 'bg-red-500/10 border-red-500/20 text-red-600'}`}>
+          <div className="flex items-center">
+            {feedback.type === 'success' ? <CheckCircle2 className="h-4 w-4 mr-2 flex-shrink-0" /> : <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />}
+            <span>{feedback.message}</span>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center space-x-2">
         <div className="relative flex-1 max-w-sm">
@@ -108,7 +137,7 @@ export default function SchedulerList() {
                         >
                           {scheduler.name}
                         </span>
-                        <span className="text-xs text-muted-foreground mt-0.5">Dest: {scheduler.destination}</span>
+                        <span className="text-xs text-muted-foreground mt-0.5">Dest: {scheduler.upload_destination || scheduler.destination || 'facebook'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -137,11 +166,16 @@ export default function SchedulerList() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <button 
-                          onClick={() => handleTrigger(scheduler.id)}
-                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                          onClick={() => handleTrigger(scheduler.id, scheduler.name)}
+                          disabled={activeTriggerId === scheduler.id}
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50"
                           title="Trigger Now"
                         >
-                          <Play className="h-4 w-4" />
+                          {activeTriggerId === scheduler.id ? (
+                            <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
                         </button>
                         <button 
                           onClick={() => handleToggle(scheduler.id)}
