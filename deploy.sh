@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-Command VPS Deployment Script with Custom Port Support
+# One-Command VPS Deployment Script with Sudo Fallback & Custom Port Support
 
 echo "🚀 Deploying AI Content Generator to VPS..."
 
@@ -16,9 +16,16 @@ fi
 PORT=$(grep "^FRONTEND_PORT=" .env | cut -d'=' -f2)
 PORT=${PORT:-3000}
 
+# Check docker permission
+DOCKER_CMD="docker"
+if ! docker info > /dev/null 2>&1; then
+  echo "⚠️ Docker requires sudo privileges. Running with sudo..."
+  DOCKER_CMD="sudo docker"
+fi
+
 # Stop existing containers & rebuild
-docker compose down
-docker compose up -d --build
+$DOCKER_CMD compose down
+$DOCKER_CMD compose up -d --build
 
 echo ""
 echo "✅ Deployment completed successfully!"
