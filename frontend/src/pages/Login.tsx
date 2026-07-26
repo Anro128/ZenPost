@@ -106,10 +106,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        <p className="text-center text-xs text-muted-foreground">
-          Protected by APP_PASSWORD environment security.
-        </p>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import os
 
 from backend.config import settings
 from backend.database import engine, Base
+from backend.renderer.download_fonts import download_fonts
 from backend.api.health import router as health_router
 from backend.api.auth import router as auth_router
 from backend.api.scheduler import router as scheduler_router
@@ -26,6 +27,12 @@ async def lifespan(app: FastAPI):
     os.makedirs(os.path.join(settings.STORAGE_PATH, "images"), exist_ok=True)
     os.makedirs(os.path.join(settings.STORAGE_PATH, "videos"), exist_ok=True)
     
+    # Auto-download TrueType TTF fonts if missing
+    try:
+        await download_fonts()
+    except Exception as e:
+        print(f"Font download warning: {e}")
+
     # Start background services
     from backend.services.queue_service import queue_service
     from backend.scheduler_engine.engine import scheduler_engine

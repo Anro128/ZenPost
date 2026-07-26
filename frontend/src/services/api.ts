@@ -1,7 +1,20 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  const metaEnv = (import.meta as any).env;
+  if (metaEnv?.VITE_API_URL) {
+    return metaEnv.VITE_API_URL;
+  }
+  // In Docker / Production Nginx deployment, use relative path '/api'
+  if (metaEnv?.PROD) {
+    return '/api';
+  }
+  // Fallback for local development
+  return 'http://localhost:8000/api';
+};
+
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
+  baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
 });
 

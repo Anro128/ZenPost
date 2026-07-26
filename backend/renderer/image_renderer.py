@@ -18,7 +18,7 @@ class RenderConfig(BaseModel):
     line_height: float = 1.4
     text_align: TextAlign = TextAlign.CENTER
     vertical_align: VerticalAlign = VerticalAlign.CENTER
-    footer_font_size: int = 18
+    footer_font_size: int = 20
     footer_color: str = "#999999"
 
 def render_image(text: str, footer: str, config: RenderConfig) -> bytes:
@@ -29,9 +29,12 @@ def render_image(text: str, footer: str, config: RenderConfig) -> bytes:
     max_w = width - (config.padding_x * 2)
     max_h = height - (config.padding_y * 2) - 100 # reserve 100px for footer
     
+    # Respect exact template font_size (default 48px) for balanced aesthetic typography
+    target_start_size = config.font_size if (config.font_size and config.font_size > 0) else 48
+    
     font, lines, total_text_height = calculate_best_font_size(
         text, config.font_family, config.font_weight, max_w, max_h, 
-        start_size=config.font_size, line_height_mult=config.line_height
+        start_size=target_start_size, min_size=18, line_height_mult=config.line_height
     )
     
     # Calculate starting Y based on vertical alignment

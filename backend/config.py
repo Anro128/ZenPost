@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_PASSWORD: str = ""  # Loaded dynamically from APP_PASSWORD in .env
     DATABASE_URL: str = "sqlite+aiosqlite:///./content_generator.db"
     STORAGE_PATH: str = "./storage"
-    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    CORS_ORIGINS: List[str] = ["*"]
     DEFAULT_TIMEZONE: str = "UTC"
     SCHEDULER_ENABLED: bool = True
 
